@@ -11,7 +11,10 @@ from data.utils import check_if_aws_credentials_present, make_historical_data
 from interface import css
 from interface.elements import reported_vs_true_cases
 from utils import COLOR_MAP, generate_html, graph_warning
-import forecast_utils
+try:
+    import forecast_utils
+except Exception as Inst:
+    print(Inst)
 
 
 
@@ -172,25 +175,36 @@ def run_app():
         
         historical_data_custom = make_historical_data(_historical_df)
         
-        forecasted_data = forecast_utils.get_forecasts(historical_data_custom, constants.FORECAST_HORIZON)
+        try:
+
+
+            forecasted_data = forecast_utils.get_forecasts(historical_data_custom, constants.FORECAST_HORIZON)
+
+            historical_plot_df = forecast_utils.prep_plotting_data(forecasted_data, historical_data_custom)
         
-        historical_plot_df = forecast_utils.prep_plotting_data(forecasted_data, historical_data_custom)
         
-        #fig = graphing.plot_historical_data(historical_data_plot, con_flag=True)
+            #fig = graphing.plot_historical_data(historical_data_plot, con_flag=True)
         
-        fig = graphing.plot_time_series_forecasts(historical_plot_df, country_flag=True, country_name=country)
+            fig = graphing.plot_time_series_forecasts(historical_plot_df, country_flag=True, country_name=country)
+        except Exception as exc:
+            print(exc)
         
     else:
         
         historical_data_custom = _historical_df.loc[_historical_df.index == country]
         
-        forecasted_data = forecast_utils.get_forecasts(historical_data_custom, constants.FORECAST_HORIZON)
-        
-        historical_plot_df = forecast_utils.prep_plotting_data(forecasted_data, historical_data_custom)
-        
-        #fig = graphing.plot_historical_data(historical_data_plot)
-        
-        fig = graphing.plot_time_series_forecasts(historical_plot_df, country_flag=False, country_name=country)
+        try:
+
+
+            forecasted_data = forecast_utils.get_forecasts(historical_data_custom, constants.FORECAST_HORIZON)
+
+            historical_plot_df = forecast_utils.prep_plotting_data(forecasted_data, historical_data_custom)
+
+            #fig = graphing.plot_historical_data(historical_data_plot)
+
+            fig = graphing.plot_time_series_forecasts(historical_plot_df, country_flag=False, country_name=country)
+        except Exception as exc:
+            print(exc)
         
     historical_data = _historical_df.loc[_historical_df.index == country]
         
@@ -207,13 +221,18 @@ def run_app():
     )
     estimated_true_cases = true_cases_estimator.predict(number_cases_confirmed)
     
-    week1_est = historical_plot_df.tail(1)
+    try:
 
-    reported_vs_true_cases(int(number_cases_confirmed), week1_est["confirmed"].tolist()[0], graphing.abbreviate(week1_est["lower_bound"].tolist()[0], round_factor=0), graphing.abbreviate(week1_est["upper_bound"].tolist()[0], round_factor=0))
 
-    # Plot historical data
-    
-    st.write(fig)
+        week1_est = historical_plot_df.tail(1)
+
+        reported_vs_true_cases(int(number_cases_confirmed), week1_est["confirmed"].tolist()[0], graphing.abbreviate(week1_est["lower_bound"].tolist()[0], round_factor=0), graphing.abbreviate(week1_est["upper_bound"].tolist()[0], round_factor=0))
+
+        # Plot historical data
+
+        st.write(fig)
+    except Exception as exc:
+        print(exc)
 
     # Predict infection spread
     sir_model = models.SIRModel(
