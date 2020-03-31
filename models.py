@@ -26,6 +26,8 @@ def get_predictions(
     max_days
 ):
 
+    print(num_diagnosed, type(num_diagnosed))
+    
     true_cases = cases_estimator.predict(num_diagnosed)
     
     #true_cases = num_diagnosed

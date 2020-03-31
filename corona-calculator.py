@@ -156,6 +156,10 @@ def run_app():
     if countries.stale:
         st.caching.clear_cache()
         countries = _fetch_country_data()
+        
+    if global_data.stale:
+        st.caching.clear_cache()
+        global_data = _fetch_global_data()
 
     utils.img_html(alt_text='Fractal', href='https://fractal.ai',
              src='https://i2.wp.com/fractal.ai/wp-content/uploads/2018/02/header-black-logo.png?fit=126%2C43&ssl=1',
@@ -192,16 +196,22 @@ def run_app():
     
     country_data = countries.country_data[country]
     
+    print(country_data)
+    
     _historical_df = countries.historical_country_data
     
     if country=="Australia":
         
         historical_data_custom = make_historical_data(_historical_df)
         
+        print(historical_data_custom)
+        
         try:
 
 
             forecasted_data = forecast_utils.get_forecasts(historical_data_custom, constants.FORECAST_HORIZON)
+            
+            print("forecasted")
 
             historical_plot_df = forecast_utils.prep_plotting_data(forecasted_data, historical_data_custom)
         
@@ -212,7 +222,7 @@ def run_app():
             
         except Exception as exc:
             
-            print(exc)
+            print("Error",exc)
         
     else:
         
@@ -249,7 +259,7 @@ def run_app():
     true_cases_estimator = models.TrueInfectedCasesModel(
         constants.ReportingRate.default
     )
-    estimated_true_cases = true_cases_estimator.predict(number_cases_confirmed)
+    #estimated_true_cases = true_cases_estimator.predict(number_cases_confirmed)
     
     try:
 
