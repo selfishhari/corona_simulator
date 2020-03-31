@@ -369,3 +369,29 @@ def make_historical_data(province_data):
     #hist_data["Date"]
     
     return hist_data
+
+
+def get_closest_death_day(df, curr_death = 17):
+    
+    df = df.copy()
+    
+    df["death_diff"] = abs(df["Deaths"] - curr_death)
+
+    closest_day = df.loc[df.death_diff == df.death_diff.min(), "Date"].min()
+
+    return closest_day, df
+
+
+def get_uk_death_mirror(uk_data, curr_death):
+    
+    uk_data = uk_data.copy()
+    
+    uk_data.sort_values("Date", inplace=True)
+    
+    closest_death_day = get_closest_death_day( uk_data, curr_death)[0]
+    
+    uk_death_mirror = uk_data.loc[uk_data["Date"] >= closest_death_day, :].copy()
+
+    uk_death_mirror["Days"] = list(range(0, uk_death_mirror.shape[0]))
+
+    return uk_death_mirror[["Days", "Deaths"]]
