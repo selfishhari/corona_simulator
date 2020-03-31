@@ -6,7 +6,13 @@ def check_staleness():
     
     timestamp = datetime.datetime.utcnow()
     
-    latest_ts = get_latest_timestamp(glob.glob(os.path.join("data","country_data_*.pickle")))
+    fnames = glob.glob(os.path.join("data","country_data_*.pickle"))
+    
+    if len(fnames) < 1:
+        
+        return True
+    
+    latest_ts = get_latest_timestamp(fnames)
     
     latest_fname = os.path.join("data","country_data_{}.pickle".format(latest_ts))
     
