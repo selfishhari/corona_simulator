@@ -13,10 +13,16 @@ def prepare_data(df):
         confirmed = df[['Date','Confirmed']]
         
     confirmed.columns = ["ds", "y"]
+    
+    print("trying to log transform")
 
-    confirmed["y"] = np.log(confirmed["y"])
+    confirmed["y"] = np.log(confirmed["y"].astype("float"))
+    
+    print("log transform done")
 
     confirmed["y"] = confirmed["y"].replace([np.inf, -np.inf], np.nan).dropna()
+    
+    print("trying to replace infs done")
 
     return confirmed
 
@@ -67,6 +73,8 @@ def get_predictions_dataframe(model, horizon=7):
 def get_forecasts(historical_data, horizon=7):
     
     prep_hist = prepare_data(historical_data)
+    
+    print("Data prep done", prep_hist)
     
     model = build_model(prep_hist)
     

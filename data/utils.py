@@ -25,6 +25,7 @@ from data.constants import (
     BED_DATA,
     OZ_STATES
 )
+from data import scrape_utils
 
 
 def execute_shell_command(command: List[str]):
@@ -84,6 +85,8 @@ def get_full_and_latest_dataframes_from_csv_aus(csv_filepaths: List[Path]):
     """
     Returns two dataframes - full table (all dates), table of the latest date
     """
+    
+    
     total_df = None
 
     for fpath in csv_filepaths:
@@ -135,29 +138,42 @@ def get_full_and_latest_dataframes_from_csv_aus(csv_filepaths: List[Path]):
     # sort by date, then country name
     total_df = total_df.sort_values(["Date", "Province/State"])
 
-    # Latest date table
-    latest_date_df = total_df[total_df["Date"] == max(total_df["Date"])]
-
-    # Set country as index
-    latest_date_df = latest_date_df.set_index("Province/State")
-    total_df = total_df.set_index("Province/State")
     
     #total_df.rename({"Province/State":"Country/Region"}, axis=1, inplace=True)
     
     #latest_date_df.rename({"Province/State":"Country/Region"}, axis=1, inplace=True)
+    try:
+        
+        total_df = scrape_utils.scrape_and_update(total_df)
+        
+    except Exception as exc:
+        print(exc)
+        
+    # Set country as index
+    total_df = total_df.set_index("Province/State")
+
+    
+    # Latest date table
+    latest_date_df = total_df[total_df["Date"] == max(total_df["Date"])]
+    
     
     return total_df, latest_date_df
 
 
 def _get_data_from_repo(path, country_flag=False):
     # Go to daily reports directory and fetch all CSV files
+    
+    
     csv_filepaths = list(Path(path).glob("*.csv"))
 
     # Get the full and latest table
     if country_flag:
+        
         full_df, latest_df = get_full_and_latest_dataframes_from_csv(csv_filepaths)
     else:
+
         full_df, latest_df = get_full_and_latest_dataframes_from_csv_aus(csv_filepaths)
+        
     data_object = {"full_table": full_df, "latest_table": latest_df}
 
     return data_object
@@ -191,7 +207,7 @@ def pull_latest_data(path=REPO_DIRPATH, country_flag=False):
     os.system(f"cd {path} && git pull")
 
     os.system(f"cd {current_dir}")
-
+    
     data_object = _get_data_from_repo(path=DAILY_REPORTS_DIRPATH, country_flag=country_flag)
 
     return data_object
@@ -205,7 +221,7 @@ def get_data_locally_or_download(data_path_locally=constants.DATA_DIR, country_f
         data_object = download_data(cleanup=False, country_flag=country_flag)
     else:
         # We need to make sure the data is up to date
-        print("pull latest")
+        
         data_object = pull_latest_data(REPO_DIRPATH, country_flag=country_flag)
 
     return data_object

@@ -544,5 +544,9 @@ def abbreviate(x, round_factor=2):
     
     thing = (round(x / b, round_factor))
     
+    if round_factor==0:
+        
+        thing = int(thing)
+    
     return str(thing) + abbreviations[a]
     
