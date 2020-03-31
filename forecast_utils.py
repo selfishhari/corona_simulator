@@ -1,6 +1,10 @@
 import pandas as pd, numpy as np, os, sys, re, joblib
 
-from fbprophet import Prophet
+try:
+    from fbprophet import Prophet
+except Exception as exp:
+    print(exp)
+
 import data.io_utils as io_utils
 
 def prepare_data(df):
