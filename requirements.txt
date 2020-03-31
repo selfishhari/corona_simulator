@@ -4,3 +4,4 @@ fbprophet
 beautifulsoup4
 requests
 selenium
+lxml
