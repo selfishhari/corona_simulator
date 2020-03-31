@@ -1,6 +1,6 @@
 import pandas as pd, numpy as np, os, sys, re, joblib
 
-from fbprophet import Prophetsss
+from fbprophet import Prophet
 import data.io_utils as io_utils
 
 def prepare_data(df):
