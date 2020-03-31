@@ -6,12 +6,16 @@ import subprocess
 from io import BytesIO
 from pathlib import Path
 from typing import List
+import glob
+import re
 
 import boto3
 import pandas as pd
 from botocore.exceptions import ClientError
-
 from data import constants
+
+#import forecast_utils
+
 from data.constants import (
     READABLE_DATESTRING_FORMAT,
     S3_ACCESS_KEY,
@@ -411,3 +415,20 @@ def get_uk_death_mirror(uk_data, curr_death):
     uk_death_mirror["Days"] = list(range(0, uk_death_mirror.shape[0]))
 
     return uk_death_mirror[["Days", "Deaths"]]
+
+
+
+        
+def prep_plotting_data(forecast_df, hist_df):
+    
+    hist_df["Date"] = pd.to_datetime(hist_df["Date"])
+    
+    forecast_df["date"] = pd.to_datetime(forecast_df["date"])
+    
+    plot_df = forecast_df.merge(hist_df, left_on="date", right_on="Date", how="outer")
+
+    plot_df.loc[pd.isnull(plot_df["date"]), "date"] = plot_df.loc[pd.isnull(plot_df["date"]), "Date"]
+
+    plot_df.sort_values("date", inplace=True)
+    
+    return plot_df

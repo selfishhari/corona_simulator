@@ -1,7 +1,9 @@
 streamlit
 plotly
 fbprophet
-beautifulsoup4
 requests
 selenium
 lxml
+joblib
+glob
+re
