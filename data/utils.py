@@ -377,7 +377,7 @@ def get_closest_death_day(df, curr_death = 17):
     
     df["death_diff"] = abs(df["Deaths"] - curr_death)
 
-    closest_day = df.loc[df.death_diff == df.death_diff.min(), "Date"].max()
+    closest_day = df.loc[df.death_diff == df.death_diff.min(), "Date"].min()
 
     return closest_day, df
 
