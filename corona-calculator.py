@@ -7,13 +7,15 @@ import graphing
 import models
 import utils
 from data import constants
-from data.utils import check_if_aws_credentials_present, make_historical_data
+from data.utils import check_if_aws_credentials_present, make_historical_data, get_uk_death_mirror
 from interface import css
 from interface.elements import reported_vs_true_cases
 from utils import COLOR_MAP, generate_html, graph_warning
 try:
     import forecast_utils
+    
 except Exception as Inst:
+    
     print(Inst)
 
 
@@ -125,6 +127,12 @@ def _fetch_country_data():
     timestamp = datetime.datetime.utcnow()
     return data.countries.Countries(timestamp=timestamp)
 
+@st.cache
+def _fetch_global_data():
+    check_if_aws_credentials_present()
+    timestamp = datetime.datetime.utcnow()
+    return data.countries.Global(timestamp=timestamp)
+
 
 def run_app():
     css.hide_menu()
@@ -132,6 +140,8 @@ def run_app():
 
     # Get cached country data
     countries = _fetch_country_data()
+    
+    global_data = _fetch_global_data()
 
     if countries.stale:
         st.caching.clear_cache()
@@ -167,8 +177,11 @@ def run_app():
     
 
     sidebar = Sidebar(countries)
+    
     country = sidebar.country
+    
     country_data = countries.country_data[country]
+    
     _historical_df = countries.historical_country_data
     
     if country=="Australia":
@@ -186,7 +199,9 @@ def run_app():
             #fig = graphing.plot_historical_data(historical_data_plot, con_flag=True)
         
             fig = graphing.plot_time_series_forecasts(historical_plot_df, country_flag=True, country_name=country)
+            
         except Exception as exc:
+            
             print(exc)
         
     else:
@@ -203,14 +218,19 @@ def run_app():
             #fig = graphing.plot_historical_data(historical_data_plot)
 
             fig = graphing.plot_time_series_forecasts(historical_plot_df, country_flag=False, country_name=country)
+            
         except Exception as exc:
+            
             print(exc)
         
     historical_data = _historical_df.loc[_historical_df.index == country]
         
     number_cases_confirmed = country_data["Confirmed"]
+    
     population = country_data["Population"]
+    
     num_hospital_beds = country_data["Num Hospital Beds"]
+    
     age_data = constants.AGE_DATA.loc[constants.AGE_DATA["State"] == country,:]
 
     st.subheader(f"How is the disease likely to spread in {country} in the next week?")
@@ -231,6 +251,7 @@ def run_app():
         # Plot historical data
 
         st.write(fig)
+        
     except Exception as exc:
         print(exc)
 
@@ -271,6 +292,7 @@ def run_app():
 
     # Do some rounding to avoid beds sounding too precise!
     approx_num_beds = round(num_hospital_beds / 100) * 100
+    
     st.write(
         f"Your country/state has around **{approx_num_beds:,}** beds. Bear in mind that most of these "
         "are probably already in use for people sick for other reasons."
@@ -278,6 +300,7 @@ def run_app():
     
 
     peak_occupancy = df.loc[df.Status == "Need Hospitalization"]["Forecast"].max()
+    
     percent_beds_at_peak = min(100 * num_hospital_beds / peak_occupancy, 100)
 
     num_beds_comparison_chart = graphing.num_beds_occupancy_comparison_chart(
@@ -297,7 +320,14 @@ def run_app():
     
     num_recovered = df[df.Status == "Recovered"].Forecast.iloc[-1]
     
-    death_plot = graphing.plot_death_timeseries(df[df.Status == "Dead"])
+    glob_hist = global_data.historical_country_data
+
+    uk_data = glob_hist.loc[(glob_hist.index == "UK") |\
+                  (glob_hist.index == "United Kingdom"), :].copy()
+    
+    uk_death_mirror = get_uk_death_mirror(uk_data, country_data["Deaths"])
+
+    death_plot = graphing.plot_death_timeseries(df[df.Status == "Dead"], uk_death_mirror, country_name=country)
     
     st.markdown(
         f"If the average person in your country adopts the selected behavior, we estimate that **{int(num_dead):,}** "
@@ -309,9 +339,11 @@ def run_app():
     )
 
     outcomes_by_age_group = models.get_status_by_age_group(num_dead, num_recovered, age_data)
+    
     fig = graphing.age_segregated_mortality(
         outcomes_by_age_group.loc[:, ["Dead"]]
     )
+    
     st.write(death_plot)
     
     st.subheader("References and Credits:")

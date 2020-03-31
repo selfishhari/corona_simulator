@@ -452,14 +452,20 @@ def plot_time_series_forecasts(df, country_flag=False, country_name="Australia")
 
     return fig
 
-def plot_death_timeseries(df):
+def plot_death_timeseries(df, df_uk, country_name="Australia"):
     
     #fig = px.line(df, x='Date', y='Dead')
     
     df.reset_index(drop=True, inplace=True)
     
-    data = go.Scatter(x=df['Days'], y=df['Forecast'], name="Total Deaths", 
-                   mode="lines+markers", line=dict(color="#e33734")
+    aus_deaths = go.Scatter(x=df['Days'], y=df['Forecast'], name="Forecasted Deaths-<br>" + str(country_name), 
+                   mode="lines", line=dict(color="#e33734")
+                  )
+    
+    print(df_uk.shape)
+    
+    uk_deaths = go.Scatter(x=df_uk['Days'], y=df_uk['Deaths'], name="Total Deaths-UK", 
+                   mode="lines", line=dict(color="#f7b63c")
                   )
     
     annotations = []
@@ -487,9 +493,37 @@ def plot_death_timeseries(df):
                     )
                 ]
             
-    fig = go.Figure(data = [data])
+    annotations += [
+                    dict(
+                        x=df_uk.tail(1)["Days"].values[0],
+                        y=df_uk.tail(1)["Deaths"].values[0],
+                        xref='x',
+                        yref='y',
+                        text= "<span style='color:#f7b63c;'>UK<br>Day: {} </span>".format(df_uk.tail(1)["Days"].values[0]) + "<br><span style='color:#f7b63c;'>" + \
+                        abbreviate(int(df_uk.tail(1)["Deaths"].values[0])) + "</span>",
+                        showarrow=True,
+                        arrowhead=3,
+                        ax=0,
+                        ay=-120
+                    )
+                ]
+            
+    fig = go.Figure(data = [aus_deaths, uk_deaths])
     
-    fig.layout.update(annotations=annotations, showlegend=True)
+    fig.layout.update(annotations=annotations, showlegend=True, legend = dict(font = dict(size=10)))
+    
+    fig.update_layout(
+    autosize=True,
+    
+    margin=dict(
+        l=5,
+        r=0,
+        b=5,
+        t=50,
+        pad=1
+    )
+    
+)
     
     
     return fig

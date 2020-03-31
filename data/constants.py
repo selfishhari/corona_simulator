@@ -77,7 +77,7 @@ class TransmissionRatePerContact:
 
 class AverageDailyContacts:
     min = 0
-    max = 50
+    max = 20
     default = 15
 
 
