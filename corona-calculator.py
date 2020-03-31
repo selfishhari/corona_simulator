@@ -88,6 +88,16 @@ class Sidebar:
             + "<br>",
             unsafe_allow_html=True,
         )
+        
+        st.sidebar.markdown(
+            body=generate_html(
+                text=f"General degree of social distancing is in the range 10-20 ",
+                line_height=0,
+                font_size="12px",
+            )
+            + "<br>",
+            unsafe_allow_html=True,
+        )
 
         self.contact_rate = st.sidebar.slider(
             label="How many people does an infected individual meet on a daily basis?",
