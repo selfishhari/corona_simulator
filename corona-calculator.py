@@ -7,16 +7,22 @@ import graphing
 import models
 import utils
 from data import constants
+import data.utils as data_utils
+import data.io_utils as io_utils
 from data.utils import check_if_aws_credentials_present, make_historical_data, get_uk_death_mirror
 from interface import css
 from interface.elements import reported_vs_true_cases
 from utils import COLOR_MAP, generate_html, graph_warning
+import warnings
+
+
+
 try:
     import forecast_utils
     
 except Exception as Inst:
     
-    print(Inst)
+    print("import forecast utils error", Inst)
 
 
 
@@ -133,19 +139,46 @@ class Sidebar:
 
 @st.cache
 def _fetch_country_data():
+    
+    """
+    Check if the data has not been pulled in last 1 hr
+    If not then scrape and fetch it.
+    Else, just load it
+    """
+    
     check_if_aws_credentials_present()
-    timestamp = datetime.datetime.utcnow()
-    return data.countries.Countries(timestamp=timestamp)
+    
+    stale = io_utils.check_staleness()
+    
+    if stale:        
+        forecast_utils.build_all_models()
+    
+    return io_utils.load_data()
 
 @st.cache
 def _fetch_global_data():
+    """
+    Check if the data has not been pulled in last 1 hr
+    If not then scrape and fetch it.
+    Else, just load it
+    """
+    
     check_if_aws_credentials_present()
-    timestamp = datetime.datetime.utcnow()
-    return data.countries.Global(timestamp=timestamp)
+    
+    stale = io_utils.check_staleness()
+    
+    if stale:        
+        forecast_utils.build_all_models()
+    
+    return io_utils.load_data(global_flag=True)
 
 
-def run_app():
+def run_app():    
+    
+    ############################### Data Load ##################################
+    
     css.hide_menu()
+    
     css.limit_plot_size()
 
     # Get cached country data
@@ -154,13 +187,22 @@ def run_app():
     global_data = _fetch_global_data()
 
     if countries.stale:
+        
         st.caching.clear_cache()
+        
         countries = _fetch_country_data()
         
     if global_data.stale:
+        
         st.caching.clear_cache()
+        
         global_data = _fetch_global_data()
-
+    
+    
+    
+    
+    ################## Heading Section ####################################
+    
     utils.img_html(alt_text='Fractal', href='https://fractal.ai',
              src='https://i2.wp.com/fractal.ai/wp-content/uploads/2018/02/header-black-logo.png?fit=126%2C43&ssl=1',
              attributes=dict(width=125, height=43, target='_blank'
@@ -189,31 +231,33 @@ def run_app():
         unsafe_allow_html=True,
     )
     
-
+    ### Add side bar
     sidebar = Sidebar(countries)
     
+
+    
+    
+    
+    
+    ###################### historical and forecast chart ##############################
+    
+    ### Get selected country
     country = sidebar.country
     
     country_data = countries.country_data[country]
-    
-    print(country_data)
     
     _historical_df = countries.historical_country_data
     
     if country=="Australia":
         
-        historical_data_custom = make_historical_data(_historical_df)
-        
-        print(historical_data_custom)
-        
+        historical_data_custom = data_utils.make_historical_data(_historical_df)        
+                
         try:
 
-
-            forecasted_data = forecast_utils.get_forecasts(historical_data_custom, constants.FORECAST_HORIZON)
+            forecasted_data = forecast_utils.get_forecasts(country, constants.FORECAST_HORIZON)
             
-            print("forecasted")
-
-            historical_plot_df = forecast_utils.prep_plotting_data(forecasted_data, historical_data_custom)
+            
+            historical_plot_df = data_utils.prep_plotting_data(forecasted_data, historical_data_custom)
         
         
             #fig = graphing.plot_historical_data(historical_data_plot, con_flag=True)
@@ -231,9 +275,9 @@ def run_app():
         try:
 
 
-            forecasted_data = forecast_utils.get_forecasts(historical_data_custom, constants.FORECAST_HORIZON)
+            forecasted_data = forecast_utils.get_forecasts(country, constants.FORECAST_HORIZON)
 
-            historical_plot_df = forecast_utils.prep_plotting_data(forecasted_data, historical_data_custom)
+            historical_plot_df = data_utils.prep_plotting_data(forecasted_data, historical_data_custom)
 
             #fig = graphing.plot_historical_data(historical_data_plot)
 
@@ -263,18 +307,31 @@ def run_app():
     
     try:
 
-
         week1_est = historical_plot_df.tail(1)
 
-        reported_vs_true_cases(int(number_cases_confirmed), week1_est["confirmed"].tolist()[0], graphing.abbreviate(week1_est["lower_bound"].tolist()[0], round_factor=0), graphing.abbreviate(week1_est["upper_bound"].tolist()[0], round_factor=0))
+        reported_vs_true_cases(int(number_cases_confirmed), week1_est["confirmed"].tolist()[0], 
+                               graphing.abbreviate(week1_est["lower_bound"].tolist()[0], round_factor=0), 
+                               graphing.abbreviate(week1_est["upper_bound"].tolist()[0], round_factor=0))
 
         # Plot historical data
-
         st.write(fig)
         
+        print("Historical Data with Forecasts plotted")
+        
     except Exception as exc:
+        
         print(exc)
-
+        
+        st.markdown(
+                f"Something went wrong :( Forecasts unavailable. Contact admin"
+        )
+    
+    
+    
+    
+    
+    ###################### SIR Model and Simulator ##############################
+    
     # Predict infection spread
     sir_model = models.SIRModel(
         transmission_rate_per_contact=constants.TransmissionRatePerContact.default,
@@ -285,6 +342,7 @@ def run_app():
         hospitalization_rate=constants.HospitalizationRate.default,
         hospital_capacity=num_hospital_beds,
     )
+    
     df = models.get_predictions(
         cases_estimator=true_cases_estimator,
         sir_model=sir_model,
@@ -306,6 +364,14 @@ def run_app():
     base_graph = graphing.infection_graph(df_base, df_base.Forecast.max(), population * 0.5, population*0.75)
     #st.warning(graph_warning)
     st.write(base_graph)
+    
+    print("Infections Graph Plotted")
+    
+    
+    
+    
+    
+    ###################### Effect on hospitals ##############################
 
     st.subheader("How will this affect my healthcare system?")
     
@@ -333,7 +399,12 @@ def run_app():
         f"At peak, **{int(peak_occupancy):,}** people will need hospital beds. Atleast ** {100-percent_beds_at_peak:.1f}% ** of people "
         f" people who need a bed in hospital might not have access given your countries historical resources."
     )
-
+    
+    
+    
+    
+    ###################### Death Charts ##############################
+    
     st.subheader("How severe will the impact be?")
 
     num_dead = df[df.Status == "Dead"].Forecast.iloc[-1]
@@ -366,6 +437,12 @@ def run_app():
     
     st.write(death_plot)
     
+    print("Deaths Graph Plotted")
+    
+    
+    
+    ###################### Credits ##############################
+    
     st.subheader("References and Credits:")
 
     st.markdown(
@@ -390,9 +467,13 @@ def run_app():
         unsafe_allow_html=True,
     )
     
+    print("complete....")
+    
     
 
 
 if __name__ == "__main__":
+    
+    warnings.filterwarnings("ignore")
 
     run_app()

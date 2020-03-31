@@ -1,8 +1,15 @@
-import pandas as pd, numpy as np
+import pandas as pd, numpy as np, os, sys, re, joblib
 
-from fbprophet import Prophet
+try:
+    from fbprophet import Prophet
+except Exception as exp:
+    print(exp)
+
+import data.io_utils as io_utils
 
 def prepare_data(df):
+    
+    print("Running data prep for model build")
     
     if "Australia" in df.columns:
 
@@ -14,20 +21,19 @@ def prepare_data(df):
         
     confirmed.columns = ["ds", "y"]
     
-    print("trying to log transform")
-
+    
     confirmed["y"] = np.log(confirmed["y"].astype("float"))
     
-    print("log transform done")
-
-    confirmed["y"] = confirmed["y"].replace([np.inf, -np.inf], np.nan).dropna()
     
-    print("trying to replace infs done")
-
+    confirmed["y"] = confirmed["y"].replace([np.inf, -np.inf], np.nan)#.dropna()
+    
+    confirmed.dropna(inplace=True)
+    
+    
     return confirmed
 
 
-def build_model(historical_data):
+def fit_model(historical_data):
     
     m = Prophet(interval_width=0.95, daily_seasonality=True)
 
@@ -70,25 +76,134 @@ def get_predictions_dataframe(model, horizon=7):
     return df
 
 
-def get_forecasts(historical_data, horizon=7):
+def get_forecasts(country, horizon=7):
     
-    prep_hist = prepare_data(historical_data)
+    stale = io_utils.check_staleness()
     
-    print("Data prep done", prep_hist)
+    if stale:
+        
+        build_all_models()
+        
+        forecast(horizon=horizon)
+        
+    try:
+        
+        forecasted_data = read_forecast(country)
+        
+    except:
+        
+        #Force rebuild ignoring stale check
+        
+        try:
+            
+            print("Force building models, ignored staleness")
+            
+            build_all_models()
+        
+            forecast(horizon=horizon)
+            
+            forecasted_data = read_forecast(country)
+            
+        except Exception as exc:
+            print("Error in getting forecasts", exc)
+            
     
-    model = build_model(prep_hist)
-    
-    forecast_df = get_predictions_dataframe(model, horizon=horizon)
-    
-    return forecast_df
+    return forecasted_data
 
-def prep_plotting_data(forecast_df, hist_df):
+def forecast(country_data=None, horizon=7):
     
-    plot_df = forecast_df.merge(hist_df, left_on="date", right_on="Date", how="outer")
-
-    plot_df.loc[pd.isnull(plot_df["date"]), "date"] = plot_df.loc[pd.isnull(plot_df["date"]), "Date"]
-
-    plot_df.sort_values("date", inplace=True)
+    if country_data==None:
+        
+        country_data = io_utils.load_data()
     
-    return plot_df
+    for country in country_data.countries:
+        
+        try:
 
+            model = load_model(country, country_data.timestamp)
+            
+        except:
+            
+            try:
+                print("Force rebuilding model for {}".format(country))
+
+                build_model(country)
+                
+                model = load_model(country, country_data.timestamp)
+                
+            except Exception as exc:
+                
+                print("Error in forecasting", exc)
+        
+        predictions = get_predictions_dataframe(model, horizon=horizon)
+        
+        write_predictions(predictions, country, country_data.timestamp)
+        
+def build_model(country):
+    
+    countries_data = io_utils.load_data()
+    
+    hist_data = countries_data.historical_country_data
+    
+    hist_data_c = hist_data.loc[hist_data.index == country]
+    
+    prep_hist = prepare_data(hist_data_c)
+    
+    print("building model for " + country)
+    
+    model = fit_model(prep_hist)
+    
+    print("Model build successful")
+    
+    model.stan_backend.logger = None
+    
+    filename = os.path.join("data", "model_{}_t_{}.joblib".format(country, countries_data.timestamp))
+    
+    print("Saving model to:", filename)
+    
+    joblib.dump(model, filename)
+    
+def load_model(country, timestamp):
+    
+    fname = os.path.join("data", "model_{}_t_{}.joblib".format(country, timestamp))
+    
+    print("Loading model from:", fname)
+    
+    model = joblib.load(fname)
+    
+    return model
+
+def write_predictions(df, country, timestamp):
+    
+    fname = os.path.join("data", "predictions_{}_t_{}.csv".format(country, timestamp))
+    
+    df.to_csv(fname, index=False)
+    
+    return fname
+
+def read_forecast(country="Australia"):
+    
+    timestamp = io_utils.get_latest_timestamp()
+    
+    fname = os.path.join("data", "predictions_{}_t_{}.csv".format(country, timestamp))
+    
+    return pd.read_csv(fname)
+
+
+def build_all_models():
+    
+    io_utils.fetch_data()
+    
+    data = io_utils.load_data()
+    
+    try:
+
+
+        for country in data.countries:
+
+            build_model(country)
+            
+    except Exception as exc:        
+        print(exc)
+        
+    return

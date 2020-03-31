@@ -13,7 +13,9 @@ class Countries:
         self.country_data = {k:v for k,v in self.country_data}
         
         self.countries = list(self.country_data.keys())
+        
         self.default_selection = self.countries.index("Australia")
+        
         self.timestamp = timestamp
 
     @property

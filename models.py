@@ -26,14 +26,8 @@ def get_predictions(
     max_days
 ):
 
-    print(num_diagnosed, type(num_diagnosed))
-    
     true_cases = cases_estimator.predict(num_diagnosed)
     
-    #true_cases = num_diagnosed
-    
-    
-
     # For now assume removed starts at 0. Doesn't have a huge effect on the model
     predictions = sir_model.predict(
         susceptible=area_population - true_cases - num_recovered - num_deaths,
@@ -44,14 +38,6 @@ def get_predictions(
     )
 
     num_entries = max_days + 1
-    
-    print(len(predictions["Infected"]), num_entries, len(list(
-                itertools.chain.from_iterable(
-                    predictions[status] for status in _STATUSES_TO_SHOW
-                )
-            )),
-         len(list(range(num_entries)) * len(_STATUSES_TO_SHOW))
-         )
     
     # Have to use the long format to make plotly express happy
     df = pd.DataFrame(
@@ -70,7 +56,6 @@ def get_predictions(
         }
     )
     
-    print(df.loc[df["Status"]=="Dead",:])
     return df
 
 
@@ -85,9 +70,11 @@ def get_probability_of_infection_give_asymptomatic(
     :param asymptomatic_ratio: Proportion of infected people who are asymptomatic. Equivalent to P(A | I).
     """
     p_i = num_infected / population
+    
     p = (p_i * asymptomatic_ratio) / (
         asymptomatic_ratio * p_i + 1.0 * (1 - p_i)
     )
+    
     return p
 
 
@@ -103,6 +90,7 @@ def get_status_by_age_group(death_prediction: int, recovered_prediction: int, ag
     :param recovered_prediction: Number of recovered people predicted.
     :return: Outcomes by age in a DataFrame.
     """
+    
     #age_data = constants.AgeData.data
     infections_prediction = recovered_prediction + death_prediction
 
@@ -115,12 +103,15 @@ def get_status_by_age_group(death_prediction: int, recovered_prediction: int, ag
 
     # Get outcomes by age
     age_data["Infected"] = (age_data.Proportion * infections_prediction).astype(int)
+    
     age_data["Need Hospitalization"] = (
         age_data["Hospitalization Rate"] * age_data.Infected
     )
+    
     age_data["Dead"] = (
         age_data.Mortality * death_increase_ratio * age_data.Infected
     ).astype(int)
+    
     age_data["Recovered"] = (age_data.Infected - age_data.Dead).astype(int)
 
     return age_data.iloc[:, -4:]
@@ -182,6 +173,9 @@ class SIRModel:
         :param num_days: Number of days to forecast.
         :return: List of values for S, I, R over time steps
         """
+        
+        print("Getting SIR model predictions")
+        
         population = susceptible + infected + recovered + dead
 
         S = [int(susceptible)]
