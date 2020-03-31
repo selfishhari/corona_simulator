@@ -1,0 +1,9 @@
+streamlit
+plotly
+fbprophet
+requests
+selenium
+lxml
+joblib
+glob
+re
