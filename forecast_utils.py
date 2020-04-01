@@ -6,6 +6,7 @@ except Exception as exp:
     print(exp)
 
 import data.io_utils as io_utils
+import data.constants as constants
 
 TIME_STAMP_FORMAT = '%d-%m-%Y-%H-%M-%S'
 
@@ -159,7 +160,8 @@ def build_model(country):
     
     model.stan_backend.logger = None
     
-    filename = os.path.join("data", "model_{}_t_{}.joblib".format(country, countries_data.timestamp.strftime(TIME_STAMP_FORMAT)))
+    filename = os.path.join(constants.MODELS_DIR, 
+                            "model_{}_t_{}.joblib".format(country, countries_data.timestamp.strftime(TIME_STAMP_FORMAT)))
     
     print("Saving model to:", filename)
     
@@ -167,7 +169,7 @@ def build_model(country):
     
 def load_model(country, timestamp):
     
-    fname = os.path.join("data", "model_{}_t_{}.joblib".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
+    fname = os.path.join(constants.MODELS_DIR, "model_{}_t_{}.joblib".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
     
     print("Loading model from:", fname)
     
@@ -177,7 +179,8 @@ def load_model(country, timestamp):
 
 def write_predictions(df, country, timestamp):
     
-    fname = os.path.join("data", "predictions_{}_t_{}.csv".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
+    fname = os.path.join(constants.OUTPUTS_DIR,
+                         "predictions_{}_t_{}.csv".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
     
     df.to_csv(fname, index=False)
     
@@ -187,7 +190,8 @@ def read_forecast(country="Australia"):
     
     timestamp = io_utils.get_latest_timestamp()
     
-    fname = os.path.join("data", "predictions_{}_t_{}.csv".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
+    fname = os.path.join(constants.OUTPUTS_DIR, 
+                         "predictions_{}_t_{}.csv".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
     
     return pd.read_csv(fname)
 
