@@ -1,4 +1,4 @@
-FROM python:3.7
+FROM safakcirag/fbprophet
 EXPOSE 8501
 WORKDIR /app
 RUN pip3 install cython
