@@ -132,3 +132,8 @@ dmypy.json
 
 .idea*
 *-env
+*.pickle
+*.joblib
+COVID-19
+predictions_*.csv
+
