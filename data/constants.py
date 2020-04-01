@@ -28,6 +28,14 @@ DEMOGRAPHIC_DATA = pd.read_csv(DEMOGRAPHICS_DATA_PATH, index_col="Country/Region
 BED_DATA = preprocess_bed_data(BED_DATA_PATH)
 AGE_DATA = pd.read_csv(AGE_DATA_PATH, index_col="Age Group")
 
+MODELS_DIR = os.path.join("data","models")
+
+OUTPUTS_DIR = os.path.join("data","outputs")
+
+PROCESSED_DIR = os.path.join("data","processed")
+
+STALE_LIMIT = 3600
+
 
 OZ_STATES = pd.DataFrame([{'Province/State': 'New South Wales', 'Population': 7317500, 'Num Hospital Beds': 28391},
              {'Province/State': 'Victoria', 'Population': 5640900, 'Num Hospital Beds': 20025},
