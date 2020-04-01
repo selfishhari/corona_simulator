@@ -442,7 +442,7 @@ def plot_time_series_forecasts(df, country_flag=False, country_name="Australia")
     fig = go.Figure(data=data, layout=layout)
     
     fig.add_trace(go.Scatter(x=[str(forecast_start_date), str(forecast_start_date)], 
-                             y=[-100, df.tail(1)["upper_bound"].tolist()[0]], 
+                             y=[-10, df.tail(1)["upper_bound"].tolist()[0]], 
                              line=dict(color='royalblue', width=1, dash='dot'), 
                              hoverinfo = "text",
                              text = ["", "Forecasting From: "+ str(forecast_start_date).replace(" 00:00:00","")],

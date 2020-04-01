@@ -10,9 +10,9 @@ import data.constants as constants
 
 TIME_STAMP_FORMAT = '%d-%m-%Y-%H-%M-%S'
 
-def prepare_data(df):
+def prepare_data(df, log_flag = True):
     
-    print("Running data prep for model build")
+    print("Running data prep for model build- Log transform?:", log_flag)
     
     if "Australia" in df.columns:
 
@@ -24,11 +24,12 @@ def prepare_data(df):
         
     confirmed.columns = ["ds", "y"]
     
-    
-    confirmed["y"] = np.log(confirmed["y"].astype("float"))
-    
-    
-    confirmed["y"] = confirmed["y"].replace([np.inf, -np.inf], np.nan)#.dropna()
+    if log_flag:
+
+        confirmed["y"] = np.log(confirmed["y"].astype("float"))
+
+
+        confirmed["y"] = confirmed["y"].replace([np.inf, -np.inf], np.nan)#.dropna()
     
     confirmed.dropna(inplace=True)
     
@@ -44,7 +45,8 @@ def fit_model(historical_data):
 
     return m
 
-def get_predictions_dataframe(model, horizon=7):
+def get_predictions_dataframe(model, horizon=7, log_flag=True):
+    print("creating forecasts..")
     
     future = model.make_future_dataframe(periods=7)
 
@@ -52,9 +54,24 @@ def get_predictions_dataframe(model, horizon=7):
 
     preds = model.predict(future.tail(horizon))[["yhat", "yhat_lower", "yhat_upper"]]
     
-    for x in preds.columns:
+    if log_flag:
+
+        for x in preds.columns:
+            
+            if (x == "ds") | (x == "actual"):
+                
+                continue
+
+            preds[x] = np.round(np.exp(preds[x]))
+    else:
         
-        preds[x] = np.round(np.exp(preds[x]))
+        for x in preds.columns:
+            
+            if (x == "ds") | (x == "actual"):
+                
+                continue
+
+            preds[x] = np.round(preds[x])
 
     preds["date"] = future["ds"].tail(horizon).tolist()
 
@@ -62,7 +79,9 @@ def get_predictions_dataframe(model, horizon=7):
     
     history_df = model.history[["ds", "y"]]
     
-    history_df["y"] = np.round(np.exp(history_df["y"]))
+    if log_flag:
+
+        history_df["y"] = np.round(np.exp(history_df["y"]))
     
     history_df.columns = ["date", "confirmed"]
     
@@ -77,6 +96,27 @@ def get_predictions_dataframe(model, horizon=7):
     #preds.loc[:55, "upper_bound"] = np.nan
 
     return df
+
+def get_ensembled_forecast(log_df, linear_df):
+    
+    print("averaging predictions from log and linear models")
+    
+    linear_df_sub = linear_df.loc[linear_df["date"].isin(log_df["date"].tolist()), :].reset_index(drop=True).copy()
+    
+    log_df = log_df.reset_index(drop=True).copy()
+    
+    averaged_result = linear_df_sub.copy()
+
+    for x in averaged_result.columns:
+    
+        if (x=="date") | (x=="actual"):
+
+            continue
+
+        averaged_result[x] = ((averaged_result[x] + log_df[x]) / 2).astype(int)
+    
+    
+    return averaged_result
 
 
 def get_forecasts(country, horizon=7):
@@ -123,26 +163,41 @@ def forecast(country_data=None, horizon=7):
         
         try:
 
-            model = load_model(country, country_data.timestamp)
+            model_log = load_model(country, country_data.timestamp, log_flag=True)
+            
+            model_linear = load_model(country, country_data.timestamp, log_flag=False)
             
         except:
             
             try:
+                #if any model is not present/unreadable force rebuild with the same time stamp
                 print("Force rebuilding model for {}".format(country))
 
-                build_model(country)
+                build_model(country, log_flag=True)
                 
-                model = load_model(country, country_data.timestamp)
+                build_model(country, log_flag=False)
+                
+                model_log = load_model(country, country_data.timestamp, log_flag=True)
+            
+                model_linear = load_model(country, country_data.timestamp, log_flag=False)
                 
             except Exception as exc:
                 
                 print("Error in forecasting", exc)
         
-        predictions = get_predictions_dataframe(model, horizon=horizon)
+        predictions_log = get_predictions_dataframe(model_log, horizon=horizon, log_flag=True)
         
-        write_predictions(predictions, country, country_data.timestamp)
+        predictions_linear = get_predictions_dataframe(model_linear, horizon=horizon, log_flag=False)
         
-def build_model(country):
+        predictions = get_ensembled_forecast(predictions_log, predictions_linear)
+        
+        write_predictions(predictions, country, country_data.timestamp, logname=None)
+        
+        write_predictions(predictions_log, country, country_data.timestamp, logname="log")
+        
+        write_predictions(predictions_linear, country, country_data.timestamp, logname="linear")
+        
+def build_model(country, log_flag=True):
     
     countries_data = io_utils.load_data()
     
@@ -150,7 +205,7 @@ def build_model(country):
     
     hist_data_c = hist_data.loc[hist_data.index == country]
     
-    prep_hist = prepare_data(hist_data_c)
+    prep_hist = prepare_data(hist_data_c, log_flag)
     
     print("building model for " + country)
     
@@ -160,16 +215,35 @@ def build_model(country):
     
     model.stan_backend.logger = None
     
+    if log_flag:
+        
+        logname = "log"
+        
+    else:
+        
+        logname = "linear"
+    
     filename = os.path.join(constants.MODELS_DIR, 
-                            "model_{}_t_{}.joblib".format(country, countries_data.timestamp.strftime(TIME_STAMP_FORMAT)))
+                            "model_{}_{}_t_{}.joblib".format(logname, 
+                                                             country, countries_data.timestamp.strftime(TIME_STAMP_FORMAT)))
     
     print("Saving model to:", filename)
     
     joblib.dump(model, filename)
     
-def load_model(country, timestamp):
+def load_model(country, timestamp, log_flag=True):
     
-    fname = os.path.join(constants.MODELS_DIR, "model_{}_t_{}.joblib".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
+    if log_flag:
+        
+        logname = "log"
+        
+    else:
+        
+        logname = "linear"
+    
+    fname = os.path.join(constants.MODELS_DIR, "model_{}_{}_t_{}.joblib".format(logname,
+                                                                                country, 
+                                                                                timestamp.strftime(TIME_STAMP_FORMAT)))
     
     print("Loading model from:", fname)
     
@@ -177,10 +251,17 @@ def load_model(country, timestamp):
     
     return model
 
-def write_predictions(df, country, timestamp):
+def write_predictions(df, country, timestamp, logname=None):
     
-    fname = os.path.join(constants.OUTPUTS_DIR,
-                         "predictions_{}_t_{}.csv".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
+    if logname==None:
+
+        fname = os.path.join(constants.OUTPUTS_DIR,
+                             "predictions_{}_t_{}.csv".format(country, timestamp.strftime(TIME_STAMP_FORMAT)))
+    else:
+        
+        fname = os.path.join(constants.OUTPUTS_DIR,
+                             "predictions_{}_{}_t_{}.csv".format(logname,
+                                                              country, timestamp.strftime(TIME_STAMP_FORMAT)))
     
     df.to_csv(fname, index=False)
     
@@ -203,11 +284,12 @@ def build_all_models():
     data = io_utils.load_data()
     
     try:
-
-
+        
         for country in data.countries:
 
-            build_model(country)
+            build_model(country, log_flag=False)
+            
+            build_model(country, log_flag=True)
             
     except Exception as exc:        
         print(exc)
