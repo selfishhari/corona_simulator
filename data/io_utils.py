@@ -1,6 +1,8 @@
 import datetime, os, sys, pandas as pd, numpy as np, glob, re, pickle
 from data.countries import Countries, Global
 
+TIME_STAMP_FORMAT = '%d-%m-%Y-%H-%M-%S'
+
 
 def check_staleness():
     
@@ -14,9 +16,9 @@ def check_staleness():
     
     latest_ts = get_latest_timestamp(fnames)
     
-    latest_fname = os.path.join("data","country_data_{}.pickle".format(latest_ts))
+    latest_fname = os.path.join("data","country_data_{}.pickle".format(latest_ts.strftime(TIME_STAMP_FORMAT)))
     
-    latest_ts = pd.to_datetime(re.search("country_data_(.*).pickle$", latest_fname).group(1))
+    latest_ts = datetime.datetime.strptime(re.search("country_data_(.*).pickle$", latest_fname).group(1),TIME_STAMP_FORMAT)
     
     delta = timestamp - latest_ts
     
@@ -24,20 +26,19 @@ def check_staleness():
 
 
 def fetch_data():
-    
     timestamp = datetime.datetime.utcnow()
     
     country_data = Countries(timestamp = timestamp)
     
     global_data = Global(timestamp = timestamp)
     
-    filename = os.path.join("data", "country_data_{}.pickle".format(timestamp))
+    filename = os.path.join("data", "country_data_{}.pickle".format(timestamp.strftime(TIME_STAMP_FORMAT)))
     
     with open(filename, 'wb') as handle:
         
         pickle.dump(country_data, handle, protocol=pickle.HIGHEST_PROTOCOL)
         
-    global_fname = os.path.join("data", "global_data_{}.pickle".format(timestamp))
+    global_fname = os.path.join("data", "global_data_{}.pickle".format(timestamp.strftime(TIME_STAMP_FORMAT)))
         
     with open(global_fname, 'wb') as handle:
         
@@ -57,7 +58,7 @@ def get_latest_timestamp(fnames=None):
         
         try:
             
-            timestamps += [pd.to_datetime(re.search("country_data_(.*).pickle$", x).group(1))]
+            timestamps += [datetime.datetime.strptime(re.search("country_data_(.*).pickle$", x).group(1), TIME_STAMP_FORMAT)]
             
         except Exception as exc:
             
@@ -76,11 +77,11 @@ def load_data(global_flag=False):
     
     if global_flag:
         
-        latest_filename = os.path.join("data", "global_data_{}.pickle".format(str(timestamp)))
+        latest_filename = os.path.join("data", "global_data_{}.pickle".format(str(timestamp.strftime(TIME_STAMP_FORMAT))))
         
     else:
         
-        latest_filename = os.path.join("data", "country_data_{}.pickle".format(str(timestamp)))
+        latest_filename = os.path.join("data", "country_data_{}.pickle".format(str(timestamp.strftime(TIME_STAMP_FORMAT))))
     
     with open(latest_filename, 'rb') as handle:
         

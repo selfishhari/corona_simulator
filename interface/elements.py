@@ -10,7 +10,7 @@ def reported_vs_true_cases(num_cases_confirmed, num_cases_estimated, lower=10, u
         f"<table style='width: 100%; font-size:14px;  border: 0px solid gray; border-spacing: 10px;  border-collapse: collapse;'> "
         f"<tr> "
         f"<td style='{_cell_style}'> Confirmed Cases</td> "
-        f"<td style='{_cell_style}'> Estimated Cases(1 Week) </td>"
+        f"<td style='{_cell_style}'> Estimated Cases (1 Week)</td>"
         "</tr>"
         f"<tr style='border: 2px solid {_border_color}'> "
         f"<td style='border-right: 2px solid {_border_color}; border-spacing: 10px; {_number_format + 'font-color:red;'}' > {num_cases_confirmed}</td> "

@@ -432,7 +432,7 @@ def plot_time_series_forecasts(df, country_flag=False, country_name="Australia")
     
     layout = go.Layout(
         yaxis=dict(title='Case Counts(Cumulative)'),
-        title='Historical Trend of Cases with Forecasts<br>(Select to zoom)',
+        title='Historical Trend of Cases with Forecasts<br>(Click double arrows to zoom)',
         annotations=annotations,
         showlegend = True
         )
@@ -549,4 +549,3 @@ def abbreviate(x, round_factor=2):
         thing = int(thing)
     
     return str(thing) + abbreviations[a]
-    
