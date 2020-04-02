@@ -187,7 +187,7 @@ def download_data(cleanup=True, country_flag=False):
     """
      Clone the JHU COVID GitHub repo (takes about a minute) and return paths to CSVs.
     """
-    cmd = ["git", "clone", DISEASE_DATA_GITHUB_REPO]
+    cmd = ["git", "clone", DISEASE_DATA_GITHUB_REPO, REPO_DIRPATH]
     execute_shell_command(cmd)
 
     data_object = _get_data_from_repo(path=DAILY_REPORTS_DIRPATH, country_flag=country_flag)
