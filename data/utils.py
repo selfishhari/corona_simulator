@@ -6,8 +6,6 @@ import subprocess
 from io import BytesIO
 from pathlib import Path
 from typing import List
-import glob
-import re
 
 import boto3
 import pandas as pd
@@ -30,7 +28,6 @@ from data.constants import (
     OZ_STATES
 )
 from data import scrape_utils
-
 
 def execute_shell_command(command: List[str]):
     return subprocess.run(command, stdout=subprocess.PIPE).stdout.decode("utf-8")
@@ -182,6 +179,15 @@ def _get_data_from_repo(path, country_flag=False):
 
     return data_object
 
+def get_file_age_in_seconds(filename):
+    """
+    return the file age in whole seconds
+
+    :param filename: the path of the file to valid_password
+    :return: number of whole seconds
+    """
+    return int(os.path.getmtime(filename))
+
 
 def download_data(cleanup=True, country_flag=False):
     """
@@ -204,14 +210,19 @@ def download_data(cleanup=True, country_flag=False):
 
 
 def pull_latest_data(path=REPO_DIRPATH, country_flag=False):
-    print("Updating the local data storage")
 
     current_dir = os.path.curdir
+    if not os.path.isdir(REPO_DIRPATH):
+        download_data(False, country_flag)
     # For some reason when I used subprocess I lost the STDOUT
-    os.system(f"cd {path} && git pull")
+    git_age = get_file_age_in_seconds(os.path.join(path, '.git'))
+    seconds_now = datetime.datetime.now().timestamp()
+    if (git_age + 3600) < seconds_now:
+        print("Updating the local data storage")
+        os.system(f"cd {path} && git pull")
 
-    os.system(f"cd {current_dir}")
-    
+        os.system(f"cd {current_dir}")
+
     data_object = _get_data_from_repo(path=DAILY_REPORTS_DIRPATH, country_flag=country_flag)
 
     return data_object
