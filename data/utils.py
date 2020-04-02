@@ -187,8 +187,9 @@ def download_data(cleanup=True, country_flag=False):
     """
      Clone the JHU COVID GitHub repo (takes about a minute) and return paths to CSVs.
     """
-    cmd = ["git", "clone", DISEASE_DATA_GITHUB_REPO, REPO_DIRPATH]
-    execute_shell_command(cmd)
+    if not os.path.isdir(REPO_DIRPATH):
+        cmd = ["git", "clone", DISEASE_DATA_GITHUB_REPO, REPO_DIRPATH]
+        execute_shell_command(cmd)
 
     data_object = _get_data_from_repo(path=DAILY_REPORTS_DIRPATH, country_flag=country_flag)
 
@@ -206,7 +207,6 @@ def pull_latest_data(path=REPO_DIRPATH, country_flag=False):
     print("Updating the local data storage")
 
     current_dir = os.path.curdir
-
     # For some reason when I used subprocess I lost the STDOUT
     os.system(f"cd {path} && git pull")
 
