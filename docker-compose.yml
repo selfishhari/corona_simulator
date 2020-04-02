@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+  corona:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - TZ=Australia/ACT
+      - ENV=UAT
+    restart: unless-stopped
