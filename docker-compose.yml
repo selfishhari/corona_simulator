@@ -7,4 +7,9 @@ services:
     environment:
       - TZ=Australia/ACT
       - ENV=UAT
+    volumes:
+      - ./persistent/COVID-19:/app/COVID-19
+      - ./persistent/data/processed:/app/data/processed
+      - ./persistent/data/outputs:/app/data/outputs
+      - ./persistent/data/models:/app/data/models
     restart: unless-stopped
