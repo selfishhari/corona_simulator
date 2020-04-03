@@ -1,15 +1,30 @@
 version: "3.7"
 services:
-  corona:
+  corona_1:
     build: .
     ports:
       - "8501:8501"
     environment:
       - TZ=Australia/ACT
       - ENV=UAT
+      - BALANCER=1
     volumes:
       - ./persistent/repos:/app/repos
       - ./persistent/data/processed:/app/data/processed
       - ./persistent/data/outputs:/app/data/outputs
       - ./persistent/data/models:/app/data/models
+    restart: unless-stopped
+  corona_2:
+    build: .
+    ports:
+      - "8502:8501"
+    environment:
+      - TZ=Australia/ACT
+      - ENV=UAT
+      - BALANCER=2
+    volumes:
+      - ./persistent/repos:/app/repos
+      - ./persistent/data_2/processed:/app/data/processed
+      - ./persistent/data_2/outputs:/app/data/outputs
+      - ./persistent/data_2/models:/app/data/models
     restart: unless-stopped
