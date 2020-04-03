@@ -1,1 +1,4 @@
 persistent
+.git
+repos
+__pychache__
