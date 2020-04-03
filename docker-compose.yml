@@ -20,7 +20,7 @@ services:
       - "8502:8501"
     environment:
       - TZ=Australia/ACT
-      - ENV=UAT
+      - ENV=UAT.
       - BALANCER=2
     volumes:
       - ./persistent/repos:/app/repos

@@ -407,6 +407,11 @@ def run_app():
 
     print("Deaths Graph Plotted")
 
+    st.markdown("-------")
+    st.markdown(body=generate_html("We'd love to hear from you!", tag='h2', color='#0090c4'), unsafe_allow_html=True)
+    user_input = st.text_input("Enter your email to contact us")
+    utils.contact_us(user_input)
+
     ###################### Credits ##############################
 
     st.subheader("References and Credits:")

@@ -28,26 +28,28 @@ DEMOGRAPHIC_DATA = pd.read_csv(DEMOGRAPHICS_DATA_PATH, index_col="Country/Region
 BED_DATA = preprocess_bed_data(BED_DATA_PATH)
 AGE_DATA = pd.read_csv(AGE_DATA_PATH, index_col="Age Group")
 
-MODELS_DIR = os.path.join("data","models")
+MODELS_DIR = os.path.join("data", "models")
 
-OUTPUTS_DIR = os.path.join("data","outputs")
+OUTPUTS_DIR = os.path.join("data", "outputs")
 
-PROCESSED_DIR = os.path.join("data","processed")
+PROCESSED_DIR = os.path.join("data", "processed")
+
+CONTACT_US_DIR = os.path.join("data", "contact-us")
 
 STALE_LIMIT = 3600
 
-
 OZ_STATES = pd.DataFrame([{'Province/State': 'New South Wales', 'Population': 7317500, 'Num Hospital Beds': 28391},
-             {'Province/State': 'Victoria', 'Population': 5640900, 'Num Hospital Beds': 20025},
-             {'Province/State': 'Queensland', 'Population': 4599400, 'Num Hospital Beds': 17063},
-             {'Province/State': 'Western Australia', 'Population': 2366900, 'Num Hospital Beds': 8449},
-             {'Province/State': 'South Australia', 'Population': 1659800, 'Num Hospital Beds': 6556},
-             {'Province/State': 'Tasmania', 'Population': 511000, 'Num Hospital Beds': 2008},
-             {'Province/State': 'Australian Capital Territory', 'Population': 366900, 'Num Hospital Beds': 1441},
-             {'Province/State': 'Northern Territory', 'Population': 231200, 'Num Hospital Beds': 908},
-             {'Province/State': 'From Diamond Princess', 'Population': 0, 'Num Hospital Beds': 0},
-             {'Province/State': 'Australia', 'Population': 24600000, 'Num Hospital Beds': 91683},
-             ]).set_index('Province/State')
+                          {'Province/State': 'Victoria', 'Population': 5640900, 'Num Hospital Beds': 20025},
+                          {'Province/State': 'Queensland', 'Population': 4599400, 'Num Hospital Beds': 17063},
+                          {'Province/State': 'Western Australia', 'Population': 2366900, 'Num Hospital Beds': 8449},
+                          {'Province/State': 'South Australia', 'Population': 1659800, 'Num Hospital Beds': 6556},
+                          {'Province/State': 'Tasmania', 'Population': 511000, 'Num Hospital Beds': 2008},
+                          {'Province/State': 'Australian Capital Territory', 'Population': 366900,
+                           'Num Hospital Beds': 1441},
+                          {'Province/State': 'Northern Territory', 'Population': 231200, 'Num Hospital Beds': 908},
+                          {'Province/State': 'From Diamond Princess', 'Population': 0, 'Num Hospital Beds': 0},
+                          {'Province/State': 'Australia', 'Population': 24600000, 'Num Hospital Beds': 91683},
+                          ]).set_index('Province/State')
 
 
 class AgeData:
@@ -111,5 +113,3 @@ class HospitalizationRate:
     # Cases requiring hospitalization. We multiply by the ascertainment rate because our source got their estimate
     # from the reported cases, whereas we will be using it with total cases.
     default = 0.19 * ReportingRate.default
-
-
