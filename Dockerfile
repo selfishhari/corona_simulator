@@ -10,5 +10,6 @@ RUN wget -N http://chromedriver.storage.googleapis.com/81.0.4044.69/chromedriver
 RUN unzip chromedriver_linux64.zip
 RUN chmod +x chromedriver
 RUN mv chromedriver /usr/local/bin
+RUN apt-get update && apt-get install y libnss3-dev
 COPY . .
 CMD streamlit run corona-calculator.py
