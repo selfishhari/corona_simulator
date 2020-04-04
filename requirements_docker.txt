@@ -1,6 +1,5 @@
 streamlit
 plotly
-fbprophet
 requests
 selenium
 lxml
