@@ -5,5 +5,3 @@ requests
 selenium
 lxml
 joblib
-glob
-re
