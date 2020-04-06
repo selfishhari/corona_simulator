@@ -158,9 +158,6 @@ def _fetch_global_data():
     If not then scrape and fetch it.
     Else, just load it
     """
-
-    check_if_aws_credentials_present()
-
     stale = io_utils.check_staleness()
 
     if stale:
