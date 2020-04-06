@@ -30,3 +30,29 @@ services:
       - ./persistent/data_2/models:/app/data/models
       - ./persistent/data/contact-us:/app/data/contact-us
     restart: unless-stopped
+
+  data_1:
+    build: .
+    environment:
+      - TZ=Australia/ACT
+      - ENV=UAT
+    volumes:
+      - ./persistent/repos:/app/repos
+      - ./persistent/data/processed:/app/data/processed
+      - ./persistent/data/outputs:/app/data/outputs
+      - ./persistent/data/models:/app/data/models
+    restart: unless-stopped
+    cmd: "./schedule.sh"
+
+  data_2:
+    build: .
+    environment:
+      - TZ=Australia/ACT
+      - ENV=UAT
+    volumes:
+      - ./persistent/repos:/app/repos
+      - ./persistent/data_2/processed:/app/data/processed
+      - ./persistent/data_2/outputs:/app/data/outputs
+      - ./persistent/data_2/models:/app/data/models
+    restart: unless-stopped
+    cmd: "./schedule.sh"
